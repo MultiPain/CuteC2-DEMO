@@ -184,10 +184,13 @@ function Circle:onPropertiesDraw(ui)
 	local x = self.collisionShape.x
 	local y = self.collisionShape.y
 	local r = self.collisionShape.radius
-	x, y, r = ui:dragFloat3(self.name, x, y, r)
-	self.collisionShape.x = x
-	self.collisionShape.y = y
-	self.collisionShape.radius = r
+	local changed = false
+	x, y, r, changed = ui:dragFloat3(self.name, x, y, r)
+	
+	if (changed) then 
+		self.collisionShape:setPosition(x, y)
+		self.collisionShape.radius = r
+	end
 end
 
 function Circle:redraw(list, isFilled, alpha)
@@ -223,11 +226,14 @@ function Rect:onPropertiesDraw(ui)
 	local y = self.collisionShape.y
 	local w = self.collisionShape.width
 	local h = self.collisionShape.height
-	x, y, w, h = ui:dragFloat4(self.name, x, y, w, h)
-	self.collisionShape.x = x
-	self.collisionShape.y = y
-	self.collisionShape.width = w
-	self.collisionShape.height = h
+	local changed = false
+	
+	x, y, w, h, changed = ui:dragFloat4(self.name, x, y, w, h)
+	
+	if (changed) then 
+		self.collisionShape:setPosition(x, y)
+		self.collisionShape:setSize(w, h)
+	end
 end
 
 function Rect:redraw(list, isFilled, alpha)
@@ -269,13 +275,15 @@ function Capsule:onPropertiesDraw(ui)
 	local y = self.collisionShape.y
 	local h = self.collisionShape.height
 	local r = self.collisionShape.radius
+	local changed = false
 	
-	x, y, h, r = ui:dragFloat4(self.name, x, y, h, r)
+	x, y, h, r, changed = ui:dragFloat4(self.name, x, y, h, r)
 	
-	self.collisionShape.x = x
-	self.collisionShape.y = y
-	self.collisionShape.height = h
-	self.collisionShape.radius = r
+	if (changed) then 
+		self.collisionShape:setPosition(x, y)
+		self.collisionShape.height = h
+		self.collisionShape.radius = r
+	end
 end
 
 function Capsule:redraw(list, isFilled, alpha)	
