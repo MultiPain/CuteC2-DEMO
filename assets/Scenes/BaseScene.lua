@@ -9,9 +9,11 @@ assert(ImGui, "ImGui module not found!")
 
 BaseScene = Core.class(Sprite)
 
-local function onDrawUI(self, e)
+function BaseScene:onEnterFrame(e)
 	local ui = self.ui
 	local dt = e.deltaTime
+	local sceneSelected = false
+	
 	ui:newFrame(dt)
 	
 	if (ui:beginFullScreenWindow("Main")) then
@@ -31,11 +33,7 @@ local function onDrawUI(self, e)
 				end
 			end
 			
-			local sceneSelected = false
 			self.scenesIndex, sceneSelected = ui:combo("Scene", self.scenesIndex, self.scenesList)
-			if (sceneSelected) then 
-				sceneManager:changeScene(self.scenesList[self.scenesIndex + 1], 0)
-			end
 			
 			self.filledShapes = ui:checkbox("Filled", self.filledShapes)
 			
@@ -53,13 +51,20 @@ local function onDrawUI(self, e)
 		self:onDrawUI()
 	end
 	
+	ui:endWindow()
 	if (self.showDemo) then 
 		self.showDemo = ui:showDemoWindow(self.showDemo)
 	end
 	
-	ui:endWindow()
 	ui:render()
 	ui:endFrame()
+	
+	if (sceneSelected) then 
+		self:removeAllListeners()
+		ui:shutdown()
+		sceneManager:changeScene(self.scenesList[self.scenesIndex + 1], 1.0, SceneManager.crossFade)
+		sceneManager.scene2.scenesIndex = self.scenesIndex
+	end
 end
 
 function BaseScene:init(themeName, drawHeader)
@@ -101,7 +106,7 @@ function BaseScene:init(themeName, drawHeader)
 	
 	self:onResize()
 	
-	self:addEventListener("enterFrame", onDrawUI, self)
+	self:addEventListener("enterFrame", self.onEnterFrame, self)
 	self:addEventListener("applicationResize", self.onResize, self)
 end
 
