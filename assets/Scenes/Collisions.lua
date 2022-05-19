@@ -40,14 +40,13 @@ function CollisionsScene:onDrawUI()
 					local sy = y + ny * d
 					
 					if (t == CuteC2.TYPE_AABB) then 
-						local w, h = other.collisionShape:getSize()
-						drawRect(list, sx, sy, sx + w, sy + h, self.filledShapes, 0xff0000, self.drawAlpha)
+						local w, h = other.collisionShape:getHalfSize()
+						drawRect(list, sx - w, sy - h, sx + w, sy + h, self.filledShapes, 0xff0000, self.drawAlpha)
 					elseif (t == CuteC2.TYPE_CIRCLE) then 
-						local r = other.collisionShape.radius
+						local r = other.collisionShape:getRadius()
 						drawCircle(list, sx, sy, r, self.filledShapes, 0xff0000, self.drawAlpha)
 					elseif (t == CuteC2.TYPE_CAPSULE) then 
-						local r = other.collisionShape.radius
-						local h = other.collisionShape.height
+						local r, h = other.collisionShape:getSize()
 						drawCapsule(list, sx, sy, h, r, self.filledShapes, 0xff0000, self.drawAlpha)
 					elseif (t == CuteC2.TYPE_POLY) then 
 						local points = other.collisionShape:getPoints()

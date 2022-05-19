@@ -5,7 +5,8 @@ sceneManager = SceneManager.new({
 	Collisions = CollisionsScene,
 	TOI = TOIScene,
 	GJK = GJKScene,
+	Ray = RayScene,
 })
 
-sceneManager:changeScene("Collisions")
+sceneManager:changeScene("Ray")
 stage:addChild(sceneManager)

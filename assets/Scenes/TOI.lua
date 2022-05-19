@@ -24,7 +24,7 @@ function TOIScene:onDrawUI()
 	local mainShape = self.mainPoint.collisionShape
 	local dstShape = self.dstPoint.collisionShape
 	
-	local mainRadius = mainShape.radius
+	local mainRadius = mainShape:getRadius()
 	
 	local x1, y1 = mainShape:getPosition()
 	local x2, y2 = dstShape:getPosition()
@@ -37,7 +37,7 @@ function TOIScene:onDrawUI()
 		shape:onDraw(ui, self.filledShapes, self.drawAlpha)
 		local hit, toi, nx, ny, px, py, iterations = CuteC2.TOI(mainShape, vx, vy, shape.collisionShape, 0, 0, true, nil, shape.transform)
 		
-		if (hit == 1) then 
+		if (hit) then 
 			-- draw normal
 			list:addLine(px, py, px - nx * 20, py - ny * 20, 0x00ff00, 1)
 			
@@ -72,5 +72,5 @@ function TOIScene:onDrawUI()
 	list:pathStroke(0x00ff00, 1, true)
 	
 	-- make sure that second point have same radius
-	dstShape.radius = mainRadius
+	dstShape:setRadius(mainRadius)
 end
