@@ -153,15 +153,19 @@ function BaseScene:createRandomShapes(objects, shapesCount, x, y)
 	assert(type(shapesCount) == 'number' and shapesCount > 0, "Incorrect amount of shapes! Must be atleast 1, but was: " .. tostring(shapesCount))
 	assert(type(objects) == 'table', "wrong argument #1, must be 'table', but was: " .. type(objects))
 	
-	local cx, cy = getScreenCenter()
+	local minX, minY, maxX, maxY = application:getLogicalBounds()
+	local w = maxX - minX
+	local h = maxY - minY
+	local cx = minX + w / 2
+	local cy = minY + h / 2
 	x = x or cx
 	y = y or cy
 	
 	local step = (math.pi * 2) / shapesCount
 	for i = 0, shapesCount - 1 do 
-		local sx = x + math.cos(i * step) * 400
-		local sy = y + math.sin(i * step) * 200
-		objects[i+1] = self:createRandomShape(sx, sy, math.random(4, 8))
+		local sx = x + math.cos(i * step) * ((w / 2) - 100)
+		local sy = y + math.sin(i * step) * ((h / 2) - 100)
+		objects[i+1] = self:createRandomShape(sx, sy, math.random(3, 6))
 	end
 end
 

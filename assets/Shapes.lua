@@ -512,7 +512,7 @@ function Poly:redraw(list, isFilled, alpha)
 			local x2 = x1 + normals[i].x * 16
 			local y2 = y1 + normals[i].y * 16
 			
-			list:addLine(x1, y1, x2, y2, self.drawColor, alpha)
+			list:addLine(x1, y1, x2, y2, 0xffffff, alpha)
 		end
 	end
 end
