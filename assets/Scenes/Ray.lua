@@ -1,7 +1,5 @@
 local PI = math.pi
 
-require "Shapes"
-
 RayScene = Core.class(BaseScene, function() return "Dark", true end)
 
 function RayScene:init()

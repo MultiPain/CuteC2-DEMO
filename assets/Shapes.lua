@@ -2,6 +2,12 @@
 local SEGMENTS = 0
 local GID = 1
 
+function drawVec(list, x, y, transform, len, color, alpha, thickness)
+	local cosa, sina = transform:getCosSin()
+	list:addLine(x, y, x + cosa * len, y + sina * len, color, alpha, thickness)
+	list:addCircle(x, y, 4, color, alpha)
+end
+
 function drawCircle(list, x, y, r, isFilled, color, alpha)
 	if (isFilled) then 
 		list:addCircleFilled(x, y, r, color, alpha, SEGMENTS)
@@ -39,11 +45,12 @@ end
 
 function drawPoly(list, points, transform, isFilled, color, alpha)
 	local x, y = transform:getPosition()
-	for i = 1, #points, 2 do 
-		local px =  points[i + 0]
-		local py =  points[i + 1]
+	
+	for i, pt in ipairs(points) do 
+		local px = x + pt.x
+		local py = y + pt.y
 		
-		list:pathLineTo(x + px, y + py)
+		list:pathLineTo(px, py)
 	end
 	
 	if (isFilled) then 
@@ -52,6 +59,17 @@ function drawPoly(list, points, transform, isFilled, color, alpha)
 	else
 		list:pathStroke(color, alpha, true)
 	end
+	
+	
+	for i, pt in ipairs(points) do 
+		local px = x + pt.x
+		local py = y + pt.y
+		
+		list:addLine(x, y, px, py, 0, 1)
+	end
+	
+	drawVec(list, x, y, transform, 51, 0, 1, 3)
+	drawVec(list, x, y, transform, 50, 0xffffff, 1)
 end
 
 local function emptyCallback() end
@@ -73,6 +91,30 @@ end
 
 function CollisionShape:contains(x, y)
 	return false
+end
+
+function CollisionShape:startDrag(mx, my)
+	self.px = mx
+	self.py = my
+	self.clickX = mx
+	self.clickY = my
+end
+
+function CollisionShape:stopDrag()
+	self.px = nil
+	self.py = nil
+	self.clickX = nil
+	self.clickY = nil
+end
+
+function CollisionShape:updateDrag(mx, my)
+	local dx = mx - self.px
+	local dy = my - self.py
+	
+	self.px = mx
+	self.py = my
+	
+	return dx, dy
 end
 
 function CollisionShape:onStartMove(mx, my)
@@ -102,17 +144,11 @@ end
 function CollisionShape:updateDragAndDrop(ui)
 	local mx, my = ui:getMousePos()
 	if (ui:isMouseClicked(KeyCode.MOUSE_LEFT) and self:contains(mx, my)) then 
-		self.px = mx
-		self.py = my
-		self.clickX = mx
-		self.clickY = my
+		self:startDrag(mx, my)
 		self:onStartMove(mx, my)
 		self.dragPos = true
 	elseif (not self.dragPos and ui:isMouseClicked(KeyCode.MOUSE_RIGHT) and self:contains(mx, my)) then 
-		self.px = mx
-		self.py = my
-		self.clickX = mx
-		self.clickY = my
+		self:startDrag(mx, my)
 		self:onStartResize(mx, my)
 		self.dragSize = true
 	end
@@ -120,25 +156,21 @@ function CollisionShape:updateDragAndDrop(ui)
 	if (self.dragPos) then 
 		if (ui:isMouseReleased(KeyCode.MOUSE_LEFT)) then
 			self.dragPos = false
+			self:stopDrag()
+		else
+			local dx, dy = self:updateDrag(mx, my)
+			self:onMove(dx, dy, mx, my)
 		end
-		
-		local dx = mx - self.px
-		local dy = my - self.py
-		self:onMove(dx, dy, mx, my)
-		self.px = mx
-		self.py = my
 	end
 	
 	if (self.dragSize) then 
 		if (ui:isMouseReleased(KeyCode.MOUSE_RIGHT)) then
 			self.dragSize = false
+			self:stopDrag()
+		else
+			local dx, dy = self:updateDrag(mx, my)
+			self:onSizeChanged(dx, dy, mx, my)
 		end
-		
-		local dx = mx - self.px
-		local dy = my - self.py
-		self:onSizeChanged(dx, dy, mx, my)
-		self.px = mx
-		self.py = my
 	end
 end
 
@@ -148,18 +180,18 @@ function CollisionShape:onDraw(ui, isFilled, alpha)
 	end
 	
 	ui:pushID(self.id)
-	self.show = ui:checkbox("Visible", self.show)
-	ui:sameLine()
-	self:onPropertiesDraw(ui)
+	if (ui:collapsingHeader(self.name)) then 
+		self.show = ui:checkbox("Visible", self.show)
+		self:onPropertiesDraw(ui)
+	end
 	ui:popID()
-	
-	self:updateDragAndDrop(ui)
 	
 	if (self.show) then 
 		local list = ui:getWindowDrawList()
 		
 		self:redraw(list, isFilled, alpha)
 	end
+	self:updateDragAndDrop(ui)
 end
 
 function CollisionShape:getType()
@@ -198,7 +230,7 @@ function Circle:onPropertiesDraw(ui)
 	local x, y = shape:getPosition()
 	local r = shape:getRadius()
 	local changed = false
-	x, y, r, changed = ui:dragFloat3(self.name, x, y, r)
+	x, y, r, changed = ui:dragFloat3("Position, radius", x, y, r)
 	
 	if (changed) then 
 		shape:setPosition(x, y)
@@ -246,10 +278,15 @@ function Rect:onPropertiesDraw(ui)
 	local w, h = shape:getSize()
 	local changed = false
 	
-	x, y, w, h, changed = ui:dragFloat4(self.name, x, y, w, h)
-	
+	x, y, changed = ui:dragFloat2("Position", x, y)
 	if (changed) then 
 		shape:setPosition(x, y)
+	end
+	
+	changed = false
+	w, h, changed = ui:dragFloat2("Size", w, h)
+	
+	if (changed) then 
 		shape:setSize(w, h)
 	end
 end
@@ -293,10 +330,16 @@ function Capsule:onPropertiesDraw(ui)
 	local r, h = shape:getSize()
 	local changed = false
 	
-	x, y, h, r, changed = ui:dragFloat4(self.name, x, y, h, r)
+	x, y, changed = ui:dragFloat4(self.name, x, y)
 	
 	if (changed) then 
 		shape:setPosition(x, y)
+	end
+	
+	changed = false
+	h, r, changed = ui:dragFloat4("Height, radius", h, r)
+	
+	if (changed) then 
 		shape:getSize(r, h)
 	end
 end
@@ -336,8 +379,24 @@ function DragPoint:redraw(list, isFilled, alpha)
 	Circle.redraw(self, list, isFilled, color, alpha)
 	
 	local x, y = self.collisionShape:getPosition()
-	list:addText(x, y+2, 0, 1, tostring(self.index)) 
-	list:addText(x, y, 0xd9d9d9, 1, tostring(self.index)) 
+	
+	local text = tostring(self.index)
+	list:addText(x, y+2, 0, 1, text) 
+	list:addText(x, y, 0xd9d9d9, 1, text) 
+end
+
+function DragPoint:rotate(cx, cy, rotation)
+	local s = math.sin(rotation)
+	local c = math.cos(rotation)
+	local px, py = self.collisionShape:getPosition()
+	
+	px -= cx
+	py -= cy
+	
+	local pxnew = px * c - py * s;
+	local pynew = px * s + py * c;
+	
+	self.collisionShape:setPosition(pxnew + cx, pynew + cy)
 end
 
 Poly = Core.class(CollisionShape, function(...) return "Poly" end)
@@ -345,88 +404,117 @@ Poly = Core.class(CollisionShape, function(...) return "Poly" end)
 function Poly:init(x, y, points)
 	self.collisionShape = CuteC2.poly(points)
 	self.transform = CuteC2.transform(x, y)
-	
-	self.__dragPoints = {}
-	local j = 1
-	for i = 1, #points, 2 do 
-		local xp = points[i+0]
-		local yp = points[i+1]
-		local pt = DragPoint.new(x + xp, y + yp, self)
-		pt.onMove = self.onPointMove
-		pt.index = j
-		self.__dragPoints[j] = pt
-		j += 1
-	end
+	self.dragPoint = 0
+	self.drawNormals = false
 end
 
-function Poly:onPointMove(dx, dy, mx, my)
-	-- self = DragPoint !!!
-	local shape = self.collisionShape
-	shape:move(dx, dy)
+function Poly:updateDragAndDrop(ui)
+	CollisionShape.updateDragAndDrop(self, ui)
 	
-	local px, py = self.parent.transform:getPosition()
-	local x, y = shape:getPosition()
-	self.parent.collisionShape:updatePoint(self.index, x - px, y - py)
+	if (self.dragPoint > 0) then 
+		local mx, my = ui:getMousePos()
+		local dx, dy = self:updateDrag(mx, my)
+		
+		-- update vertex position with respect to shape rotation
+		local vx, vy = self.collisionShape:getVertex(self.dragPoint)
+		local rot = self.transform:getRotation()
+		local l = math.length(dx, dy)
+		local ang = math.atan2(dy, dx)
+		
+		ang -= rot
+		vx += math.cos(ang) * l
+		vy += math.sin(ang) * l
+		
+		self.collisionShape:setVertex(self.dragPoint, vx, vy)
+		
+		if (ui:isMouseReleased(KeyCode.MOUSE_LEFT)) then
+			self.dragPoint = 0
+		end
+	end
 end
 
 function Poly:contains(mx, my)
-	for i,pt in ipairs(self.__dragPoints) do 
-		if (pt.dragPos or pt:contains(mx, my)) then 
+	local points = self.collisionShape:getRotatedPoints(self.transform)
+	local tx, ty = self.transform:getPosition()
+	
+	for i, pt in ipairs(points) do 
+		local x = tx + pt.x
+		local y = ty + pt.y
+		
+		local d = math.distance(mx, my, 0, x, y, 0)
+		if (d <= 12) then
+			self.dragPoint = i
+			self:startDrag(mx, my)
 			return false
 		end
 	end
+	
 	return self.collisionShape:hitTest(mx, my, self.transform)
 end
 
 function Poly:onPropertiesDraw(ui)
-	local x, y = self.transform:getPosition()
-	local ox = x
-	local oy = y
-	local changed = false
-	x, y, changed = ui:dragFloat2(self.name, x, y)
+	self.drawNormals = ui:checkbox(self.name .. " draw normals", self.drawNormals)
 	
+	local x, y = self.transform:getPosition()
+	local changed = false
+	x, y, changed = ui:dragFloat2("Position", x, y)
 	
 	if (changed) then 
 		self.transform:setPosition(x, y)
-		local dx = x - ox
-		local dy = y - oy
-		
-		for i,pt in ipairs(self.__dragPoints) do 
-			pt.collisionShape:move(dx, dy)
-		end
+	end
+	
+	local rot = self.transform:getRotation()
+	
+	changed = false
+	rot, changed = ui:dragFloat("Rotation", rot, 0.01)
+	
+	if (changed) then 
+		self.transform:setRotation(rot)
 	end
 end
 
 function Poly:onMove(dx, dy, mx, my)
 	self.transform:move(dx, dy)
-	local tx, ty = self.transform:getPosition()
-	
-	for i,pt in ipairs(self.__dragPoints) do 
-		local x, y = pt.collisionShape:getPosition()
-		pt.collisionShape:move(dx, dy)
-		self.collisionShape:updatePoint(pt.index, x - tx, y - ty)
-	end
 end
 
-function Poly:onDraw(ui, isFilled, alpha)
-	for i,pt in ipairs(self.__dragPoints) do 
-		pt:onDraw(ui, isFilled, alpha)
-	end
-	CollisionShape.onDraw(self, ui, isFilled, alpha)
-end
-
-function Poly:redraw(list, isFilled, alpha)
-	local points = self.collisionShape:getPoints()
+function Poly:onStartResize(mx, my)
 	local x, y = self.transform:getPosition()
+	local ang = math.atan2(self.clickY - y, self.clickX - x)
+	self.clickAng = ang
+	self.prevAng = ang
+end
+
+function Poly:onSizeChanged(dx, dy, mx, my)
+	local x, y = self.transform:getPosition()
+	local currentAng = math.atan2(my - y, mx - x)
+	self.transform:rotate(currentAng - self.prevAng)
+	self.prevAng = currentAng
+end
 	
-	drawPoly(list, points, self.transform, isFilled, self.drawColor, alpha)
+function Poly:redraw(list, isFilled, alpha)
+	local points = self.collisionShape:getRotatedPoints(self.transform)
 	
-	local minX, minY, maxX, maxY = self.collisionShape:getBoundingBox()
-	minX += x
-	minY += y
-	maxX += x
-	maxY += y
-	drawRect(list, minX, minY, maxX, maxY, isFilled, self.drawColor, alpha / 2)
+	drawPoly(list, points, self.transform, isFilled, self.drawColor, alpha)	
+	
+	local tx, ty = self.transform:getPosition()
+	for i, pt in ipairs(points) do 
+		local x = tx + pt.x
+		local y = ty + pt.y
+		
+		list:addCircle(x, y, 12, 0x00ff00, 1)
+	end
+	
+	if (self.drawNormals) then 
+		local normals = self.collisionShape:getRotatedNormals(self.transform)
+		for i = 1, #points do 
+			local x1 = tx + points[i].x
+			local y1 = ty + points[i].y
+			local x2 = x1 + normals[i].x * 16
+			local y2 = y1 + normals[i].y * 16
+			
+			list:addLine(x1, y1, x2, y2, self.drawColor, alpha)
+		end
+	end
 end
 
 Ray = Core.class(CollisionShape, function(...) return "Ray" end)
@@ -489,12 +577,17 @@ function Ray:onPropertiesDraw(ui)
 	local sx, sy = self.pt1.collisionShape:getPosition()
 	local ex, ey = self.pt2.collisionShape:getPosition()
 	local changed = false
-	sx, sy, ex, ey, changed = ui:dragFloat4(self.name, sx, sy, ex, ey)
-	
+	sx, sy, changed = ui:dragFloat2("Start", sx, sy)
 	if (changed) then 
 		self.pt1.collisionShape:setPosition(sx, sy)
+		self:update()
+	end
+	
+	changed = false
+	ex, ey, changed = ui:dragFloat2("Target", ex, ey)
+	
+	if (changed) then 
 		self.pt2.collisionShape:setPosition(ex, ey)
-		
 		self:update()
 	end
 end

@@ -5,6 +5,8 @@ if (not ImGui) then
 	end
 end
 
+require "Shapes"
+
 assert(ImGui, "ImGui module not found!")
 
 BaseScene = Core.class(Sprite)
@@ -16,7 +18,7 @@ function BaseScene:onEnterFrame(e)
 	
 	ui:newFrame(dt)
 	
-	if (ui:beginFullScreenWindow("Main")) then
+	if (ui:beginFullScreenWindow("Main", nil, ImGui.WindowFlags_Modal)) then
 		if (self.drawHeader) then
 			self.showDemo = ui:checkbox("Demo", self.showDemo)
 			ui:sameLine()
@@ -80,6 +82,8 @@ function BaseScene:init(themeName, drawHeader)
 	
 	self.ui = ImGui.new()
 	self.io = self.ui:getIO()
+	self.io:setConfigFlags(ImGui.ConfigFlags_NavNoCaptureKeyboard)
+	self.io:addConfigFlags(ImGui.ConfigFlags_NavEnableKeyboard)
 	self:addChild(self.ui)
 	
 	local style = self.ui:getStyle()

@@ -1,9 +1,3 @@
-require "Shapes"
-
-local function drawManifold(ui, ...)
-	ui:text(("Count: %d\nDepths: [%f, %f]\nPoint1: [%f, %f]\nPoint2: [%f, %f]\nNormal: [%f, %f]"):format(...))
-end
-
 CollisionsScene = Core.class(BaseScene, function() return "Dark", true end)
 
 function CollisionsScene:init()
@@ -20,9 +14,9 @@ function CollisionsScene:onDrawUI()
 		obj:onDraw(ui, self.filledShapes, self.drawAlpha)
 		
 		for j, other in ipairs(self.objects) do 
-			local t = other:getType()
-			
-			if (obj ~= other) then 
+			if (other ~= obj) then 
+				local t = other:getType()
+				
 				local mainfold = CuteC2.collide(obj.collisionShape, other.collisionShape, obj.transform, other.transform)
 				
 				if (mainfold.count > 0) then 
@@ -49,7 +43,7 @@ function CollisionsScene:onDrawUI()
 						local r, h = other.collisionShape:getSize()
 						drawCapsule(list, sx, sy, h, r, self.filledShapes, 0xff0000, self.drawAlpha)
 					elseif (t == CuteC2.TYPE_POLY) then 
-						local points = other.collisionShape:getPoints()
+						local points = other.collisionShape:getRotatedPoints(other.transform)
 						local tmpX, tmpY = other.transform:getPosition()
 						other.transform:setPosition(sx, sy)
 						

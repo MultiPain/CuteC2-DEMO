@@ -1,5 +1,3 @@
-require "Shapes"
-
 GJKScene = Core.class(BaseScene, function() return "Dark", true end)
 
 function GJKScene:init()
