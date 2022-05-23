@@ -11,6 +11,49 @@ assert(ImGui, "ImGui module not found!")
 
 BaseScene = Core.class(Sprite)
 
+function BaseScene:init(themeName, drawHeader)
+	self.drawHeader = drawHeader
+	
+	self.filledShapes = true
+	self.drawAlpha = 0.4
+	self.filledAlpha = self.drawAlpha
+	self.showDemo = false
+	self.themeIndex = 0
+	self.scenesList = {}
+	self.scenesIndex = -1
+	
+	self.ui = ImGui.new()
+	self.io = self.ui:getIO()
+	self:addChild(self.ui)
+	
+	local style = self.ui:getStyle()
+	style:setItemSpacing(8, 3)
+	style:setFramePadding(4, 1)
+	
+	if (themeName == "Dark") then
+		self.ui:setDarkStyle()
+		self.themeIndex = 0
+	elseif (themeName == "Light") then
+		self.ui:setLightStyle()
+		self.themeIndex = 1
+	else
+		self.ui:setClassicStyle()
+		self.themeIndex = 2
+	end
+	
+	if (sceneManager and sceneManager.scenes) then 
+		self.scenesIndex = 0
+		for k,v in pairs(sceneManager.scenes) do 
+			self.scenesList[#self.scenesList + 1] = k
+		end
+	end
+	
+	self:onResize()
+	
+	self:addEventListener("enterFrame", self.onEnterFrame, self)
+	self:addEventListener("applicationResize", self.onResize, self)
+end
+
 function BaseScene:onEnterFrame(e)
 	local ui = self.ui
 	local dt = e.deltaTime
@@ -67,51 +110,6 @@ function BaseScene:onEnterFrame(e)
 		sceneManager:changeScene(self.scenesList[self.scenesIndex + 1], 1.0, SceneManager.crossFade)
 		sceneManager.scene2.scenesIndex = self.scenesIndex
 	end
-end
-
-function BaseScene:init(themeName, drawHeader)
-	self.drawHeader = drawHeader
-	
-	self.filledShapes = true
-	self.drawAlpha = 0.4
-	self.filledAlpha = self.drawAlpha
-	self.showDemo = false
-	self.themeIndex = 0
-	self.scenesList = {}
-	self.scenesIndex = -1
-	
-	self.ui = ImGui.new()
-	self.io = self.ui:getIO()
-	self.io:setConfigFlags(ImGui.ConfigFlags_NavNoCaptureKeyboard)
-	self.io:addConfigFlags(ImGui.ConfigFlags_NavEnableKeyboard)
-	self:addChild(self.ui)
-	
-	local style = self.ui:getStyle()
-	style:setItemSpacing(8, 3)
-	style:setFramePadding(4, 1)
-	
-	if (themeName == "Dark") then
-		self.ui:setDarkStyle()
-		self.themeIndex = 0
-	elseif (themeName == "Light") then
-		self.ui:setLightStyle()
-		self.themeIndex = 1
-	else
-		self.ui:setClassicStyle()
-		self.themeIndex = 2
-	end
-	
-	if (sceneManager and sceneManager.scenes) then 
-		self.scenesIndex = 0
-		for k,v in pairs(sceneManager.scenes) do 
-			self.scenesList[#self.scenesList + 1] = k
-		end
-	end
-	
-	self:onResize()
-	
-	self:addEventListener("enterFrame", self.onEnterFrame, self)
-	self:addEventListener("applicationResize", self.onResize, self)
 end
 
 function BaseScene:createRandomShape(centerX, centerY, polyVerticesCount)

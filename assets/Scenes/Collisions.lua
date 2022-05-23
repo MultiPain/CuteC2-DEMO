@@ -23,7 +23,9 @@ function CollisionsScene:onDrawUI()
 					local nx = mainfold.normal.x
 					local ny = mainfold.normal.y
 					local d = mainfold.depths[1]
-					local x, y = 0, 0
+					local x = 0
+					local y = 0
+					
 					if (t == CuteC2.TYPE_POLY) then 
 						x, y = other.transform:getPosition()
 					else
