@@ -8,17 +8,23 @@ function RayScene:init()
 	self:createRandomShapes(self.objects, 6)
 end
 
-function RayScene:testRay(list, ray, shape, displace)
+function RayScene:onDrawUI()
+	self.ray:drawProperties(self.ui)
+	self.rayCone:drawProperties(self.ui)
+	BaseScene.onDrawUI(self)
+end
+
+function RayScene:testRay(list, ray, shape, displace, drawHitPoint)
 	local hit, normalX, normalY, t = shape.collisionShape:rayTest(ray)
 	
 	if (hit) then 
-		--[[
-		local sx, sy = ray:getPosition()
-		local tx, ty = ray:getTargetPosition()
-		local hitX = sx + tx * t
-		local hitY = sy + ty * t
-		drawVec(list, hitX, hitY, normalX, normalY, 4, 20, 0xffffff, 1)
-		--]]
+		if (drawHitPoint) then
+			local sx, sy = ray:getPosition()
+			local tx, ty = ray:getTargetPosition()
+			local hitX = sx + tx * t
+			local hitY = sy + ty * t
+			drawVec(list, hitX, hitY, normalX, normalY, 4, 20, 0xffffff, 1)
+		end
 		
 		if (displace) then 
 			ray:setLength(t - 0.0)
@@ -38,10 +44,11 @@ function RayScene:onDraw()
 	local rays = self.rayCone.rays
 	
 	self.rayCone:onMoveTarget()
+	
 	for i, shape in ipairs(self.objects) do 
 		shape:draw(ui)
 		
-		self:testRay(list, ray1, shape)
+		self:testRay(list, ray1, shape, false, true)
 		self:testRay(list, ray2, shape)
 		
 		for j, coneRay in ipairs(rays) do
