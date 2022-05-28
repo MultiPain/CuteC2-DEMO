@@ -26,7 +26,6 @@ function Circle:onSizeChanged(dx, dy, mx, my)
 	self.collisionShape:setRadius(d - self.startDistance)
 end
 
-
 function Circle:onPropertiesDraw(ui)
 	local shape = self.collisionShape
 	local x, y = shape:getPosition()
@@ -40,10 +39,10 @@ function Circle:onPropertiesDraw(ui)
 	end
 end
 
-function Circle:redraw(list, isFilled, alpha)
+function Circle:redraw(list)
 	local shape = self.collisionShape
 	local x, y = shape:getPosition()
 	local r = shape:getRadius()
 	
-	drawCircle(list, x, y, r, isFilled, self.drawColor, alpha)
+	drawCircle(list, x, y, r, self.drawColor)
 end

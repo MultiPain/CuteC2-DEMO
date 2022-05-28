@@ -9,14 +9,16 @@ function RayScene:init()
 end
 
 function RayScene:testRay(list, ray, shape, displace)
-	local hit, normalX, normalY, t = shape.collisionShape:rayTest(ray, shape.transform)
+	local hit, normalX, normalY, t = shape.collisionShape:rayTest(ray)
 	
 	if (hit) then 
+		--[[
 		local sx, sy = ray:getPosition()
 		local tx, ty = ray:getTargetPosition()
 		local hitX = sx + tx * t
 		local hitY = sy + ty * t
 		drawVec(list, hitX, hitY, normalX, normalY, 4, 20, 0xffffff, 1)
+		--]]
 		
 		if (displace) then 
 			ray:setLength(t - 0.0)
@@ -24,12 +26,12 @@ function RayScene:testRay(list, ray, shape, displace)
 	end
 end
 
-function RayScene:onDrawUI()
+function RayScene:onDraw()
 	local ui = self.ui	
 	local list = ui:getForegroundDrawList()
 	
-	self.ray:onDraw(ui, self.filledShapes, self.drawAlpha)
-	self.rayCone:onDraw(ui, self.filledShapes, self.drawAlpha)
+	self.ray:draw(ui)
+	self.rayCone:draw(ui)
 	
 	local ray1 = self.ray.collisionShape
 	local ray2 = self.rayCone.collisionShape
@@ -37,7 +39,7 @@ function RayScene:onDrawUI()
 	
 	self.rayCone:onMoveTarget()
 	for i, shape in ipairs(self.objects) do 
-		shape:onDraw(ui, self.filledShapes, self.drawAlpha)
+		shape:draw(ui)
 		
 		self:testRay(list, ray1, shape)
 		self:testRay(list, ray2, shape)
